@@ -1,3 +1,0 @@
-:set +t +s
-:set -fglasgow-exts
-:set -Wall

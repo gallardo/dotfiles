@@ -1,0 +1,146 @@
+allprojects {
+    repositories {
+        /*
+        maven {
+            name 'my-repo-name'
+            url 'https://my-repo-url/repository/my-repo-name/'
+        }
+        */
+    }
+
+    task showArtifacts {
+        group = "Help"
+        description = "Displays the artifacts associated with each configuration of " + project
+
+        doFirst {
+            configurations.findAll().each { Configuration config ->
+                println "$config (name: '${config.name}', description: '${config.description}')"
+                config.allArtifacts.getFiles().each { file ->
+                    println "" + file
+                }
+                println ' '
+            }
+        }
+    }
+
+    task listRepos {
+        group = "Help"
+        description = "List all repositories"
+        doLast {
+            println "Repositories:"
+            project.repositories.each { println "Name: " + it.name + "; url: " + it.url }
+        }
+    }
+
+    task infoBuildscript {
+        group = "Help"
+        description = "Print the details of all buildscript configurations"
+        doLast {
+            println "Buildscript configurations:"
+            buildscript.configurations.each {
+                println "+ " + it
+                println "  + classpath: "
+                it.each {
+                    print "    + " + it // At least, I'd expect buildscript.configurations.classpath if it's defined
+                }
+                println ""
+            }
+        }
+    }
+    task listConfigs {
+        group = "Help"
+        description = "Print all configurations and their dependencies"
+        doLast {
+            println "Configurations:"
+            configurations.each {
+                println " " + it.name + " (transitive: " + it.transitive + ")"
+                it.dependencies.each {
+                    println "   -- " + it
+                }
+            }
+        }
+    }
+
+    task listSourceSets {
+        group = "Help"
+        description = "Print details of all SourceSets"
+        doLast {
+            println "SourceSets:"
+            sourceSets.each { sourceSet ->
+                println sourceSet
+                sourceSet.each {
+                    println "name: " + it.name
+                    println "output.classesDir: " + it.output.classesDir
+                    println "output.resourcesDir: " + it.output.resourcesDir
+                    println "compileClasspath.asPath: " + it.compileClasspath.asPath
+                    println "runtimeClasspath.asPath: " + it.runtimeClasspath.asPath
+                    println "java.name: " + it.java.name
+                    println "java.srcDirs: " + it.java.srcDirs
+                    println "resources.name: " + it.resources.name
+                    println "resources.srcDirs: " + it.resources.srcDirs
+                    println "allJava.name: " + it.allJava.name
+                    println "allJava.srcDirs: " + it.allJava.srcDirs
+                    println "allSource.name: " + it.allSource.name
+                    println "allSource.srcDirs: " + it.allSource.srcDirs
+                    println "-------------------------------------"
+                }
+            }
+        }
+    }
+
+    task listPoms {
+        group 'Help'
+        description 'List all poms of all artifacts of all Upload tasks'
+        doFirst {
+//            List<GroovyMavenDeployer> mavenDeployers = [
+//                    install.repositories.mavenDeployer,
+//                    uploadArchives.repositories.mavenDeployer,
+//            ]
+
+            tasks.withType(Upload) { Upload uploader ->
+                println "============   Artifacts for MavenDeployer of Upload task '$uploader.name' ============"
+                println()
+                println()
+
+                // mavenDeployer: method defined by the maven plugin
+                GroovyMavenDeployer mavenDeployer = uploader.repositories.mavenDeployer
+                mavenDeployer.activePomFilters.each { org.gradle.api.publication.maven.internal.PomFilter f ->
+                    println "Filter =============== $f.name ==============="
+                    f.pomTemplate.with {
+                        println "$uploader.name / $f.name - $it.groupId : $it.artifactId : $it.version : $it.packaging"
+                        println "$uploader.name / $f.name - Desc: $it.model.description"
+                        println "$uploader.name / $f.name - Reps: $it.model.repositories"
+                        println "$uploader.name / $f.name - Deps: $it.model.dependencies"
+                    }
+                }
+            }
+        }
+    }
+
+    task findGroovy {
+        group = "Help"
+        description = "Print classpaths with groovy or gradle packages"
+        doLast {
+            println "classpath with groovy or gradle names:"
+            buildscript.configurations.classpath.findAll { ["groovy", "gradle"].contains(it.name) }.each { println it }
+        }
+    }
+
+    task listTasksOutputs {
+        group = "Help"
+        description = "Prints outputs of every task"
+
+        doLast {
+            tasks.findAll().each {
+                def taskOutputs = ''
+                println "$it outputs:"
+                it.outputs.files.each {
+                    taskOutputs += "$it "
+                }
+                println "$taskOutputs"
+                println "========================================"
+            }
+        }
+    }
+}
+
